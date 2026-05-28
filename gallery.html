@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery - Corey's Bobcat Services</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="index.html">Corey's Bobcat Services</a>
+  <ul class="nav-links">
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#services">Services</a></li>
+    <li><a href="gallery.html">Gallery</a></li>
+    <li><a href="index.html#materials">Materials</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- GALLERY PAGE -->
+<section id="gallery-page">
+  <div class="gallery-page-header">
+    <h1>Project Gallery</h1>
+    <p>Work from across Strathcona, Beaver, Camrose, and Lamont County.</p>
+  </div>
+  <div class="gallery-grid" id="galleryGrid"></div>
+</section>
+
+<div id="lightbox" class="lightbox">
+  <button class="lightbox-close" id="lightboxClose">&times;</button>
+  <button class="lightbox-prev" id="lightboxPrev">&#8592;</button>
+  <button class="lightbox-next" id="lightboxNext">&#8594;</button>
+  <div class="lightbox-inner"><img src="" alt="" id="lightboxImg"></div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-name">Corey's Bobcat Services - Corey Mandrusiak</span>
+  <span class="footer-copy">&copy; 2026 &middot; Lindbrook, Alberta &middot; All rights reserved</span>
+</footer>
+
+<script>
+const grid = document.getElementById('galleryGrid');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxClose = document.getElementById('lightboxClose');
+const lightboxPrev = document.getElementById('lightboxPrev');
+const lightboxNext = document.getElementById('lightboxNext');
+
+let images = [];
+let currentIndex = 0;
+
+async function loadGallery() {
+  try {
+    const res = await fetch('gallery/manifest.json');
+    if (res.ok) {
+      images = await res.json();
+      buildGallery();
+      return;
+    }
+  } catch (e) {}
+  
+  // Fallback: auto-detect by trying to load images
+  const exts = ['jpg', 'jpeg', 'png', 'webp'];
+  for (let i = 1; i <= 100; i++) {
+    const num = String(i).padStart(2, '0');
+    for (const ext of exts) {
+      const src = `gallery/photo-${num}.${ext}`;
+      if (await imageExists(src)) {
+        images.push(src);
+        break;
+      }
+    }
+  }
+  buildGallery();
+}
+
+function imageExists(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+}
+
+function buildGallery() {
+  images.forEach((src, index) => {
+    const div = document.createElement('div');
+    div.className = 'gallery-item';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `Photo ${index + 1}`;
+    img.loading = 'lazy';
+    div.appendChild(img);
+    grid.appendChild(div);
+    div.addEventListener('click', () => openLightbox(index));
+  });
+}
+
+function openLightbox(i) {
+  currentIndex = i;
+  lightboxImg.src = images[i];
+  lightbox.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  updateNav();
+}
+
+function closeLightbox() {
+  lightbox.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function showPrev() {
+  currentIndex = (currentIndex - 1 + images.length) % images.length;
+  lightboxImg.src = images[currentIndex];
+}
+
+function showNext() {
+  currentIndex = (currentIndex + 1) % images.length;
+  lightboxImg.src = images[currentIndex];
+}
+
+function updateNav() {
+  lightboxPrev.style.display = images.length > 1 ? '' : 'none';
+  lightboxNext.style.display = images.length > 1 ? '' : 'none';
+}
+
+lightboxClose.addEventListener('click', closeLightbox);
+lightboxPrev.addEventListener('click', showPrev);
+lightboxNext.addEventListener('click', showNext);
+lightbox.addEventListener('click', (e) => e.target === lightbox && closeLightbox());
+document.addEventListener('keydown', (e) => {
+  if (!lightbox.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') showPrev();
+  if (e.key === 'ArrowRight') showNext();
+});
+
+loadGallery();
+</script>
+</body>
+</html>
